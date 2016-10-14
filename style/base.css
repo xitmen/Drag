@@ -1,0 +1,49 @@
+* {
+  padding: 0;
+  margin: 0;
+}
+.no_select {
+  -moz-user-select: none;
+  /*火狐*/
+  -webkit-user-select: none;
+  /*webkit浏览器*/
+  -ms-user-select: none;
+  /*IE10*/
+  -khtml-user-select: none;
+  /*早期浏览器*/
+  user-select: none;
+}
+.cur {
+  cursor: pointer;
+}
+.box {
+  width: 250px;
+  margin: 0 auto;
+}
+.line {
+  padding: 5px 0;
+  width: 250px;
+  height: 25px;
+  line-height: 25px;
+  border: 1px solid #009A61;
+  margin: 5px;
+  text-indent: 5px;
+}
+.line i {
+  font-style: normal;
+  width: 25px;
+  height: 25px;
+  display: inline-block;
+  text-align: center;
+  background-color: #009A61;
+  color: #fff;
+  text-indent: -999rem;
+  margin-right: 10px;
+}
+.clone {
+  width: 250px;
+  height: 25px;
+  border: 1px dotted #009A61;
+  padding: 5px 0;
+  margin: 5px;
+}
