@@ -2,7 +2,8 @@
  * 拖动组件
  * elemClass .line 需要注册的到事件
  * data:    []   菜单数据
- * type:    1    左右拖动, 2:上下拖动, 3:全方位拖动, 4:归类
+ * type:    1    左右拖动, 2:上下拖动, 3:全方位拖动
+ * active:  1    默认交换位置 0:执行其他事件
  * time:    15   多少时间激活拖动事件
  * offset:  15   达到多少偏移量的时候注册拖动事件
  ***/
@@ -12,8 +13,9 @@ var Drag = function( config ){
     this.begin = true;
     this.dragData = [];
     this.target = null;
+    this.active = this.config.active || 1;
     this.targetOurMarin = {};
-    this.impactData = [];
+    this.map = { 1:'changePos' },
     this.curElemPos = {};
     this.movePos = {x:0,y:0};
     this.pos = {};
@@ -33,20 +35,11 @@ Drag.prototype = {
     init: function(){
         var _self = this;
         for( var i = 0; i < _self.config.data.length; i++ ){
-            _self.dragData.push( _self.htmlMode.call( _self.config.mode, _self.config.data[i]  ) );
+            var obj = $( _self.htmlMode.call( _self.config.mode, _self.config.data[i]  ) );
+            obj.index = i;
+            _self.dragData.push( obj );
+            _self.config.con.append( obj );
         }
-        _self.config.con.html( _self.dragData.join('') );
-        var list = _self.config.con.find( '.'+_self.config.elemClass );
-        $.each( list, function(){
-            var _me = $(this),
-                mL = parseInt(_me.css('marginLeft')),
-                mT = parseInt(_me.css('marginTop')),
-                pos = _me.offset(),
-                w = _me.outerWidth(),
-                h = _me.outerHeight();
-            _self.impactData.push({l:pos.left + mL, t: pos.top + mT,r: pos.left + w, b: pos.top + h });
-        });
-        console.log( this.impactData );
         $(document).on('mousedown',function( e ){
             var target = $( e.target).hasClass( _self.config.elemClass) ? $( e.target) : $( e.target).parents( '.'+_self.config.elemClass).eq(0);
             _self.offset = e.pageX;
@@ -83,8 +76,12 @@ Drag.prototype = {
         })
     },
     dragMove: function( e ){
-        var time = new Date().getTime() - this.curTime;
-        this.movePos = {x: e.pageX - this.curElemPos.x  - this.targetOurMarin.l , y: e.pageY - this.curElemPos.y - this.targetOurMarin.t };
+        this.movePos = {
+            x: e.pageX - this.curElemPos.x  - this.targetOurMarin.l ,
+            y: e.pageY - this.curElemPos.y - this.targetOurMarin.t,
+            w: this.target.outerWidth(),
+            h: this.target.outerHeight()
+        };
         if( this.begin ){
             this.begin = false;
         }else{
@@ -95,9 +92,6 @@ Drag.prototype = {
                 offset = {top: this.movePos.y};
             }else{
                 offset = {top: this.movePos.y,left: this.movePos.x};
-                if( this.config.type == 4 ){
-                    //判断是否碰撞
-                }
             }
             this.target.css(offset);
         }
@@ -106,23 +100,69 @@ Drag.prototype = {
         var _self = this;
         this.body.removeClass('no_select');
         $(document).off('mousemove mouseup');
-        this.target.animate({
-            left: this.pos.x,
-            top: this.pos.y
-        },100,function(){
-            _self.clone.replaceWith( _self.target.removeAttr('style') );
-            _self.target = null;
-            _self.begin = true;
-            _self.impact();
-        })
+        this.dragData = _self.config.con.find( '.'+_self.config.elemClass );
+        var impactData = [];
+        $.each( this.dragData, function(){
+            var _me = $(this),
+                mL = parseInt(_me.css('marginLeft')),
+                mT = parseInt(_me.css('marginTop')),
+                pos = _me.offset(),
+                w = _me.outerWidth(),
+                h = _me.outerHeight();
+            impactData.push({x:pos.left - mL, y: pos.top - mT,w: w, h: h });
+        });
+        var index = _self.impact( impactData );
+        if( index != null){
+            _self[ _self.map[ _self.active ] ]( index );
+            _self.endCallBack();
+        }else{
+            this.target.animate({
+                left: this.pos.x,
+                top: this.pos.y
+            },100,function(){
+                _self.clone.replaceWith( _self.target );
+                _self.endCallBack();
+            })
+        }
     },
-    impact: function(  ){
+    impact: function( impactData ){
         var _self = this;
-        console.log( _self.movePos );
-        $.each( _self.impactData, function( n, obj ){
-            if( _self.movePos.x >= obj.l && _self.movePos.x < obj.r && _self.movePos.y >= obj.t && _self.movePos.y < obj.b ){
-                console.log( n  );
+        var index = null;
+        $.each( impactData, function( n, obj ){
+            if( _self.impactFn( _self.movePos, obj ) ){
+                index = n;
             }
-        })
+        });
+        return index;
+    },
+    impactFn: function( o, d ){
+        var px, py;
+        px = o.x <= d.x ? d.x : o.x;
+        py = o.y <= d.y ? d.y : o.y;
+        // 判断点是否都在两个对象中
+        if (px >= o.x && px <= o.x + o.w && py >= o.y && py <= o.y + o.h && px >= d.x && px <= d.x + d.w && py >= d.y && py <= d.y + d.h) {
+            return true;
+        } else {
+            return false;
+        }
+    },
+    changePos : function( index ){
+        $( this.dragData[index] ).before( this.target );
+    },
+    endCallBack: function(){
+        this.dragData = this.config.con.find( '.'+this.config.elemClass );
+        this.target.removeAttr('style');
+        this.clone.remove();
+        this.target = null;
+        this.begin = true;
+        var data = [];
+        $.each( this.dragData, function( n ){
+            var _me = $( this),
+                index = parseInt( _me.attr('index') );
+            $(this).attr('new-index',n);
+            data.push( { newIndex: n, index: index } )
+        } );
+        this.config.callBack && this.config.callBack( data );
     }
+
 };
