@@ -4,8 +4,6 @@
  * data:    []   菜单数据
  * type:    1    左右拖动, 2:上下拖动, 3:全方位拖动
  * active:  1    默认交换位置 0:执行其他事件
- * time:    15   多少时间激活拖动事件
- * offset:  15   达到多少偏移量的时候注册拖动事件
  ***/
 
 var Drag = function( config ){
@@ -147,7 +145,13 @@ Drag.prototype = {
         }
     },
     changePos : function( index ){
-        $( this.dragData[index] ).before( this.target );
+        var newIndex = parseInt( $( this.dragData[index] ).attr('new-index') );
+        var oldIndex = parseInt( this.target.attr('new-index') );
+        if( newIndex > oldIndex ){
+            $( this.dragData[index] ).after( this.target );
+        }else{
+            $( this.dragData[index] ).before( this.target );
+        }
     },
     endCallBack: function(){
         this.dragData = this.config.con.find( '.'+this.config.elemClass );
@@ -164,5 +168,4 @@ Drag.prototype = {
         } );
         this.config.callBack && this.config.callBack( data );
     }
-
 };

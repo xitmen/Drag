@@ -1,6 +1,6 @@
 $(function(){
     var callback = function( data ){
-        alert( data );
+        //alert( data );
     };
     var config = {
         con: $('.box'),
