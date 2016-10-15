@@ -18,7 +18,8 @@
 }
 .box {
   width: 250px;
-  margin: 0 auto;
+  margin-top: 30px;
+  margin-left: 150px;
 }
 .line {
   padding: 5px 0;
@@ -26,8 +27,9 @@
   height: 25px;
   line-height: 25px;
   border: 1px solid #009A61;
-  margin: 5px;
+  margin: 15px;
   text-indent: 5px;
+  background-color: #fff;
 }
 .line i {
   font-style: normal;
@@ -45,5 +47,5 @@
   height: 25px;
   border: 1px dotted #009A61;
   padding: 5px 0;
-  margin: 5px;
+  margin: 15px;
 }

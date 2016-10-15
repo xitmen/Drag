@@ -12,6 +12,10 @@ var Drag = function( config ){
     this.begin = true;
     this.dragData = [];
     this.target = null;
+    this.targetOurMarin = {};
+    this.impactData = [];
+    this.curElemPos = {};
+    this.movePos = {x:0,y:0};
     this.pos = {};
     this.clone = null;
     this.body = $('body');
@@ -28,10 +32,21 @@ Drag.prototype = {
     },
     init: function(){
         var _self = this;
-        for( var i = 0; i < this.config.data.length; i++ ){
-            this.dragData.push( this.htmlMode.call( this.config.mode, this.config.data[i]  ) );
+        for( var i = 0; i < _self.config.data.length; i++ ){
+            _self.dragData.push( _self.htmlMode.call( _self.config.mode, _self.config.data[i]  ) );
         }
-        this.config.con.html( this.dragData.join('') );
+        _self.config.con.html( _self.dragData.join('') );
+        var list = _self.config.con.find( '.'+_self.config.elemClass );
+        $.each( list, function(){
+            var _me = $(this),
+                mL = parseInt(_me.css('marginLeft')),
+                mT = parseInt(_me.css('marginTop')),
+                pos = _me.offset(),
+                w = _me.outerWidth(),
+                h = _me.outerHeight();
+            _self.impactData.push({l:pos.left + mL, t: pos.top + mT,r: pos.left + w, b: pos.top + h });
+        });
+        console.log( this.impactData );
         $(document).on('mousedown',function( e ){
             var target = $( e.target).hasClass( _self.config.elemClass) ? $( e.target) : $( e.target).parents( '.'+_self.config.elemClass).eq(0);
             _self.offset = e.pageX;
@@ -47,37 +62,39 @@ Drag.prototype = {
         var _self = this;
         var evnetPos = {x: e.pageX, y: e.pageY };
         var elemPos = this.target.offset();
+        this.targetOurMarin = {l:parseInt(this.target.css('marginLeft')), t:parseInt(this.target.css('marginTop')) };
         this.pos = { x: elemPos.left, y : elemPos.top };
+        this.curElemPos = {x:evnetPos.x - this.pos.x, y: evnetPos.y - this.pos.y };
         this.clone = $(this.config.clone);
         this.target.replaceWith( this.clone );
         this.body.append( this.target );
         this.target.css({
             position:'absolute',
-            left: this.pos.x,
-            top:  this.pos.y
+            left: evnetPos.x - this.curElemPos.x - this.targetOurMarin.l,
+            top: evnetPos.y -  this.curElemPos.y - this.targetOurMarin.t
         })
         $(document).on({
             mousemove :function( e ){
                 _self.dragMove( e );
             },
             mouseup : function(){
-                _self.dragEnd();
+                _self.dragEnd( e );
             }
         })
     },
     dragMove: function( e ){
         var time = new Date().getTime() - this.curTime;
-        var pos = {x: e.pageX, y: e.pageY };
+        this.movePos = {x: e.pageX - this.curElemPos.x  - this.targetOurMarin.l , y: e.pageY - this.curElemPos.y - this.targetOurMarin.t };
         if( this.begin ){
             this.begin = false;
         }else{
             var offset = {};
             if(  this.config.type == 1  ){
-                offset = {left: pos.x};
+                offset = {left: this.movePos.x};
             }else if( this.config.type == 2 ){
-                offset = {top: pos.y};
+                offset = {top: this.movePos.y};
             }else{
-                offset = {top: pos.y,left: pos.x};
+                offset = {top: this.movePos.y,left: this.movePos.x};
                 if( this.config.type == 4 ){
                     //判断是否碰撞
                 }
@@ -85,7 +102,7 @@ Drag.prototype = {
             this.target.css(offset);
         }
     },
-    dragEnd: function(){
+    dragEnd: function( e ){
         var _self = this;
         this.body.removeClass('no_select');
         $(document).off('mousemove mouseup');
@@ -96,6 +113,16 @@ Drag.prototype = {
             _self.clone.replaceWith( _self.target.removeAttr('style') );
             _self.target = null;
             _self.begin = true;
+            _self.impact();
+        })
+    },
+    impact: function(  ){
+        var _self = this;
+        console.log( _self.movePos );
+        $.each( _self.impactData, function( n, obj ){
+            if( _self.movePos.x >= obj.l && _self.movePos.x < obj.r && _self.movePos.y >= obj.t && _self.movePos.y < obj.b ){
+                console.log( n  );
+            }
         })
     }
 };
